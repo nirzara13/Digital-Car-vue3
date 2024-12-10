@@ -1,0 +1,36 @@
+.header {
+    background-color: var(--aw-color-bg-page);
+    color: white;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+  }
+  
+  .header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .header .title {
+    font-size: 1.875rem; /* 3xl */
+    font-weight: bold;
+  }
+  
+  .header .nav-link {
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  
+  .header .nav-link:hover {
+    color: var(--aw-color-text-muted);
+  }
+  
+  .header .logo {
+    width: 50px;
+    height: auto;
+  }
+  
