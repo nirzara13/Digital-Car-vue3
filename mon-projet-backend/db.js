@@ -1,15 +1,14 @@
-
-
 // db.js
 const { Pool } = require('pg');
+require('dotenv').config(); // Charger les variables d'environnement depuis le fichier .env
 
 // Configuration de la connexion à la base de données PostgreSQL
 const pool = new Pool({
-  user: 'postgres', // Remplace par ton nom d'utilisateur PostgreSQL
-  host: 'localhost', // Hôte de la base de données, ici localhost
-  database: 'dcdb', // Remplace par le nom de ta base de données
-  password: 'DigitalCar123@', // Remplace par ton mot de passe PostgreSQL
-  port: 5432, // Port par défaut de PostgreSQL
+  user: process.env.DB_USER, 
+  host: process.env.DB_HOST, 
+  database: process.env.DB_NAME, 
+  password: process.env.DB_PASSWORD, 
+  port: process.env.DB_PORT, 
 });
 
 // Test de la connexion pour s'assurer que tout fonctionne

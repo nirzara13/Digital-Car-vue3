@@ -1,10 +1,21 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { check, validationResult } = require('express-validator');
-const User = require('../models/User');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import { check, validationResult } from 'express-validator';
+import User from '../models/User.js';
+import session from 'express-session';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = express.Router();
+
+// Configuration du middleware de session
+router.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false, maxAge: 3600000 } // 1 heure
+}));
 
 // Route d'Inscription
 router.post(
@@ -14,15 +25,18 @@ router.post(
     check('email', 'Veuillez inclure un email valide').isEmail(),
     check('password', 'Le mot de passe doit être au moins de 10 caractères, contenir une majuscule, une minuscule, deux chiffres et deux caractères spéciaux')
       .isLength({ min: 10 })
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{10,}$/),
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{10,}$/)
+      .withMessage('Le mot de passe est trop faible, il doit contenir : 1 majuscule, 1 minuscule, 2 chiffres et 2 caractères spéciaux'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { username, email, password } = req.body;
+    console.log('Registration request:', { username, email, password });
 
     try {
       let user = await User.findOne({ where: { email } });
@@ -38,19 +52,15 @@ router.post(
         password: hashedPassword,
       });
 
-      const payload = { user: { id: user.id } };
+      // Créer une session pour l'utilisateur
+      req.session.user = { id: user.id, username: user.username, email: user.email };
 
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' },
-        (err, token) => {
-          if (err) throw err;
-          res.status(201).json({ token });
-        }
-      );
+      // Renvoyer une réponse avec succès et une redirection vers la page de connexion
+      console.log('User registered successfully. Redirecting to login.');
+      res.status(201).json({ msg: 'Utilisateur créé avec succès', redirect: '/login' });
+
     } catch (err) {
-      console.error(err.message);
+      console.error('Error during registration:', err.message);
       res.status(500).send('Erreur du serveur');
     }
   }
@@ -66,10 +76,12 @@ router.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { email, password } = req.body;
+    console.log('Login request:', { email, password });
 
     try {
       let user = await User.findOne({ where: { email } });
@@ -82,24 +94,18 @@ router.post(
         return res.status(400).json({ msg: 'Identifiants invalides.' });
       }
 
-      const payload = { user: { id: user.id } };
+      // Créer une session pour l'utilisateur
+      req.session.user = { id: user.id, username: user.username, email: user.email };
 
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' },
-        (err, token) => {
-          if (err) throw err;
-          res.status(200).json({ token });
-        }
-      );
+      // Réponse de succès et redirection vers le tableau de bord
+      console.log('Login successful, redirecting to dashboard');
+      res.status(200).json({ msg: 'Connexion réussie', redirect: '/dashboard' });
+
     } catch (err) {
-      console.error(err.message);
+      console.error('Error during login:', err.message);
       res.status(500).send('Erreur du serveur');
     }
   }
 );
 
-module.exports = router;
-
-
+export default router;

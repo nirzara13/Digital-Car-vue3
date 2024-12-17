@@ -1,67 +1,62 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const User = require('../models/User');  // Assure-toi que ce modèle est bien défini pour l'utilisateur
 
-// Fonction pour envoyer l'e-mail de réinitialisation
-const sendResetEmail = (email, resetToken) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'ton.email@gmail.com',
-      pass: 'ton_mot_de_passe'
-    }
-  });
 
-  const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
 
-  const mailOptions = {
-    from: 'ton.email@gmail.com',
-    to: email,
-    subject: 'Réinitialisation de votre mot de passe',
-    text: `Cliquez sur le lien suivant pour réinitialiser votre mot de passe : ${resetLink}`
-  };
+// controllers/authController.js
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log('Erreur lors de l\'envoi de l\'email:', error);
-    } else {
-      console.log('Email envoyé: ' + info.response);
-    }
-  });
-};
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-// Route pour demander un lien de réinitialisation
-exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
+// Définissez une variable d'environnement pour la clé secrète
+const JWT_SECRET = process.env.JWT_SECRET || 'Hola123';
+
+export const register = async (req, res) => {
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: 'Utilisateur non trouvé.' });
+    const { username, email, password } = req.body;
 
-    const resetToken = jwt.sign({ userId: user._id }, 'votre_clé_secrète', { expiresIn: '1h' });
+    // Vérification du mot de passe
+    if (
+      password.length < 10 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/\d/.test(password) ||
+      !/[!@#$%^&*]/.test(password)
+    ) {
+      return res.status(400).json({
+        message:
+          'Le mot de passe doit être au moins de 10 caractères, contenir une majuscule, une minuscule, deux chiffres et deux caractères spéciaux'
+      });
+    }
 
-    sendResetEmail(user.email, resetToken);
+    // Création de l'utilisateur
+    const user = await User.create({
+      username,
+      email,
+      password: await bcrypt.hash(password, 10)
+    });
 
-    res.status(200).json({ msg: 'Un email de réinitialisation a été envoyé.' });
-  } catch (error) {
-    res.status(500).json({ msg: 'Erreur du serveur, veuillez réessayer.' });
+    res.status(201).json({ message: 'Utilisateur créé avec succès' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 };
 
-// Route pour réinitialiser le mot de passe
-exports.resetPassword = async (req, res) => {
-  const { token, newPassword } = req.body;
-
+export const login = async (req, res) => {
   try {
-    const decoded = jwt.verify(token, 'votre_clé_secrète');
-    const user = await User.findById(decoded.userId);
-    if (!user) return res.status(404).json({ msg: 'Utilisateur non trouvé.' });
+    const { email, password } = req.body;
+    const user = await User.findOne({ where: { email } });
 
-    user.password = bcrypt.hashSync(newPassword, 10);
-    await user.save();
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Identifiants invalides' });
+    }
 
-    res.status(200).json({ msg: 'Mot de passe réinitialisé avec succès.' });
-  } catch (error) {
-    res.status(400).json({ msg: 'Token invalide ou expiré.' });
+    // Générer un token JWT
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+      expiresIn: '2h'
+    });
+
+    res.json({ token, redirect: '/dashboard' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 };

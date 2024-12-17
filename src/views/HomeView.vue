@@ -75,8 +75,8 @@ export default {
     <main class="flex-grow-1 pt-5 mt-5">
       <div class="container py-5 text-center">
         <section class="mb-5">
-          <h2 class="display-4 font-weight-bold text-1282A2 mb-4">Welcome to My Survey App</h2>
-          <p class="lead mb-4">Create and participate in exciting surveys</p>
+          <h2 class="display-4 font-weight-bold text-1282A2 mb-4">Bienvenue</h2>
+          <p class="lead mb-4">Site pour les techniciens</p>
           <!-- Enlever les boutons de connexion et d'inscription -->
         </section>
         <!-- Ajouter un carousel ici -->
@@ -86,16 +86,16 @@ export default {
               <div class="carousel-item active">
                 <img src="https://via.placeholder.com/800x400?text=Survey+1" class="d-block w-100" alt="Survey 1">
                 <div class="carousel-caption d-none d-md-block">
-                  <h5>Survey 1</h5>
-                  <p>Description of Survey 1.</p>
+                  <h5>Image 1</h5>
+                  <p></p>
                 </div>
               </div>
 
               <div class="carousel-item">
                 <img src="https://via.placeholder.com/800x400?text=Survey+2" class="d-block w-100" alt="Survey 2">
                 <div class="carousel-caption d-none d-md-block">
-                  <h5>Survey 2</h5>
-                  <p>Description of Survey 2.</p>
+                  <h5>Image 2</h5>
+                  <p>Description</p>
                 </div>
                 
               </div>
@@ -103,8 +103,8 @@ export default {
               <div class="carousel-item">
                 <img src="https://via.placeholder.com/800x400?text=Survey+3" class="d-block w-100" alt="Survey 3">
                 <div class="carousel-caption d-none d-md-block">
-                  <h5>Survey 3</h5>
-                  <p>Description of Survey 3.</p>
+                  <h5>Image 3</h5>
+                  <p>Description</p>
                 </div>
               </div>
             </div>

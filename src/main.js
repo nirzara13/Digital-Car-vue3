@@ -15,7 +15,9 @@ import 'bootstrap/dist/css/bootstrap.min.css'; // Importer Bootstrap CSS
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'; // Importer Bootstrap JS
 import './assets/index.css'; // Importer ton fichier CSS global
 
-createApp(App).use(router).mount('#app');
+// createApp(App).use(router).mount('#app');
 
-
+const app = createApp(App);
+app.use(router);  // Utiliser le router
+app.mount('#app');
 

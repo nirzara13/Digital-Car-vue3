@@ -1,55 +1,150 @@
-// require('dotenv').config();
 
-// const express = require('express');
+
+
+
+// import express from 'express';
+// import dotenv from 'dotenv';
+// import session from 'express-session';
+// import cors from 'cors';
+// import sequelize from './config/sequelize.js';
+// import authRoutes from './routes/authRoutes.js';
+// import proceduresRoutes from './routes/proceduresRoutes.js';  // Ajout des routes
+
+// dotenv.config();
+
 // const app = express();
-// const bodyParser = require('body-parser');
-// const authRoutes = require('./routes/auth');
-// const dashboardRoutes = require('./routes/dashboardRoute');
 
-// // Middleware
-// app.use(bodyParser.json());
+// app.use(cors({
+//   origin: 'http://localhost:5173', // URL de votre frontend Vue
+//   credentials: true
+// }));
 
-// // Route par défaut pour la racine
-// app.get('/', (req, res) => {
-//   res.send('Bienvenue sur l\'API !');
-// });
+// app.use(express.json()); // Middleware pour analyser les requêtes JSON
 
-// // Routes pour l'authentification et le dashboard
+// app.use(session({
+//   secret: process.env.SESSION_SECRET,
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: {
+//     secure: false, // false si en développement
+//     httpOnly: true,
+//     maxAge: 3600000 // 1 heure
+//   }
+// }));
+
 // app.use('/api/auth', authRoutes);
-// app.use('/api/dashboard', dashboardRoutes);
+// app.use('/api/procedures', proceduresRoutes);  // Utilisation des routes
 
-// // Lancer le serveur
-// app.listen(3000, () => {
-//   console.log('Server is running on port 3000');
-// });
+// sequelize.authenticate()
+//   .then(() => {
+//     console.log('Connexion à la base de données réussie');
+//     app.listen(3000, () => {
+//       console.log('Serveur démarré sur http://localhost:3000');
+//     });
+//   })
+//   .catch((err) => {
+//     console.error('Impossible de se connecter à la base de données :', err);
+//   });
 
 
+import express from 'express';
+import dotenv from 'dotenv';
+import session from 'express-session';
+import cors from 'cors';
+import multer from 'multer'; // Import pour gérer les fichiers
+import path from 'path';
+import { spawn } from 'child_process'; // Utilisé pour la conversion
+import fs from 'fs';
+import sequelize from './config/sequelize.js';
+import authRoutes from './routes/authRoutes.js';
+import proceduresRoutes from './routes/proceduresRoutes.js'; // Ajout des routes
 
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-
-// Import des routes
-const authRoutes = require('./routes/authRoutes'); // Route pour l'authentification
-const dashboardRoute = require('./routes/dashboardRoute'); // Route pour le tableau de bord
+dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(cors()); // Autoriser les requêtes Cross-Origin
-app.use(bodyParser.json()); // Parser les requêtes en JSON
+app.use(cors({
+  origin: 'http://localhost:5173', // URL de votre frontend Vue
+  credentials: true
+}));
 
-// Routes
-app.use('/api/auth', authRoutes); // Routes liées à l'authentification
-app.use('/api', dashboardRoute); // Routes liées au tableau de bord
+app.use(express.json()); // Middleware pour analyser les requêtes JSON
 
-// Route par défaut (facultative)
-app.get('/', (req, res) => {
-  res.send('Bienvenue sur l\'API Backend !');
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // false si en développement
+    httpOnly: true,
+    maxAge: 3600000 // 1 heure
+  }
+}));
+
+// Configuration de Multer pour l'upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir); // Crée le dossier si nécessaire
+    }
+    cb(null, uploadDir); // Stockage dans le dossier 'uploads'
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Nom unique pour chaque fichier
+  },
+});
+const upload = multer({ storage });
+
+// Route pour uploader un fichier
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  const uploadedFile = req.file;
+
+  if (!uploadedFile) {
+    return res.status(400).json({ message: 'Aucun fichier envoyé.' });
+  }
+
+  res.status(200).json({
+    message: 'Fichier uploadé avec succès.',
+    filePath: uploadedFile.path,
+  });
 });
 
-// Lancement du serveur
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
+// Route pour convertir un fichier en PDF
+app.post('/api/convert', (req, res) => {
+  const { filePath } = req.body;
+
+  if (!filePath) {
+    return res.status(400).json({ message: 'Chemin du fichier manquant.' });
+  }
+
+  const pdfPath = filePath.replace(path.extname(filePath), '.pdf');
+
+  const libreOfficeProcess = spawn('libreoffice', ['--headless', '--convert-to', 'pdf', filePath, '--outdir', path.dirname(filePath)]);
+
+  libreOfficeProcess.on('exit', (code) => {
+    if (code === 0) {
+      res.status(200).json({
+        message: 'Fichier converti en PDF avec succès.',
+        pdfPath,
+      });
+    } else {
+      res.status(500).json({ message: 'Erreur lors de la conversion du fichier.' });
+    }
+  });
 });
+
+// Routes existantes
+app.use('/api/auth', authRoutes);
+app.use('/api/procedures', proceduresRoutes);
+
+sequelize.authenticate()
+  .then(() => {
+    console.log('Connexion à la base de données réussie');
+    app.listen(3000, () => {
+      console.log('Serveur démarré sur http://localhost:3000');
+    });
+  })
+  .catch((err) => {
+    console.error('Impossible de se connecter à la base de données :', err);
+  });

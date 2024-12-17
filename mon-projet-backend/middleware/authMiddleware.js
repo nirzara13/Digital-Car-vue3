@@ -39,19 +39,21 @@
 
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
-  const token = req.headers['x-access-token'];
+const authMiddleware = (req, res, next) => {
+  const token = req.headers['authorization'];
 
   if (!token) {
-    return res.status(403).json({ msg: 'Token manquant, accès interdit.' });
+    return res.status(403).json({ msg: 'Accès refusé' });
   }
 
   try {
-    const decoded = jwt.verify(token, 'secret_key'); // 'secret_key' doit correspondre à celle utilisée lors de la création du token
-    req.user = decoded; // Ajoute l'info de l'utilisateur dans la requête
+    const decoded = jwt.verify(token, 'your_jwt_secret');
+    req.user = decoded;
     next();
   } catch (error) {
-    return res.status(403).json({ msg: 'Token invalide.' });
+    res.status(401).json({ msg: 'Token invalide' });
   }
 };
+
+module.exports = authMiddleware;
 
