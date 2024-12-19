@@ -15,10 +15,14 @@ const Procedure = sequelize.define('Procedure', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  // Ajoute d'autres champs nécessaires pour ta table
+  pdf_existe: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false, // Par défaut, aucun PDF n'existe
+  },
 }, {
-  tableName: 'procedures',  // Nom de la table dans ta base de données
-  timestamps: false,  // Si tu n'as pas de colonnes 'createdAt' et 'updatedAt'
+  tableName: 'procedures',
+  timestamps: false,
 });
 
 export { Procedure };
+

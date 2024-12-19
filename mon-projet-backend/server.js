@@ -47,21 +47,25 @@
 //   });
 
 
+// server.js
 import express from 'express';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import cors from 'cors';
-import multer from 'multer'; // Import pour gérer les fichiers
-import path from 'path';
-import { spawn } from 'child_process'; // Utilisé pour la conversion
-import fs from 'fs';
 import sequelize from './config/sequelize.js';
 import authRoutes from './routes/authRoutes.js';
-import proceduresRoutes from './routes/proceduresRoutes.js'; // Ajout des routes
+import proceduresRoutes from './routes/proceduresRoutes.js';
+import uploadsRoutes from './routes/uploadsRoutes.js';  // Import des routes de fichier
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
 const app = express();
+
+// Obtenir le répertoire de travail actuel
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(cors({
   origin: 'http://localhost:5173', // URL de votre frontend Vue
@@ -81,62 +85,14 @@ app.use(session({
   }
 }));
 
-// Configuration de Multer pour l'upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir); // Crée le dossier si nécessaire
-    }
-    cb(null, uploadDir); // Stockage dans le dossier 'uploads'
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Nom unique pour chaque fichier
-  },
-});
-const upload = multer({ storage });
-
-// Route pour uploader un fichier
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  const uploadedFile = req.file;
-
-  if (!uploadedFile) {
-    return res.status(400).json({ message: 'Aucun fichier envoyé.' });
-  }
-
-  res.status(200).json({
-    message: 'Fichier uploadé avec succès.',
-    filePath: uploadedFile.path,
-  });
-});
-
-// Route pour convertir un fichier en PDF
-app.post('/api/convert', (req, res) => {
-  const { filePath } = req.body;
-
-  if (!filePath) {
-    return res.status(400).json({ message: 'Chemin du fichier manquant.' });
-  }
-
-  const pdfPath = filePath.replace(path.extname(filePath), '.pdf');
-
-  const libreOfficeProcess = spawn('libreoffice', ['--headless', '--convert-to', 'pdf', filePath, '--outdir', path.dirname(filePath)]);
-
-  libreOfficeProcess.on('exit', (code) => {
-    if (code === 0) {
-      res.status(200).json({
-        message: 'Fichier converti en PDF avec succès.',
-        pdfPath,
-      });
-    } else {
-      res.status(500).json({ message: 'Erreur lors de la conversion du fichier.' });
-    }
-  });
-});
-
-// Routes existantes
+// Utilisation des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/procedures', proceduresRoutes);
+app.use('/api/uploads', uploadsRoutes);  // Utilisation des routes de fichiers
+
+
+// Définir le répertoire statique pour les fichiers PDF
+app.use('/uploads/pdf', express.static(path.join(__dirname, 'uploads', 'pdf')));
 
 sequelize.authenticate()
   .then(() => {
