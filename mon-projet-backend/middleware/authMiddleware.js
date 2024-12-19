@@ -13,7 +13,6 @@
 //   });
 // };
 
-
 // const jwt = require('jsonwebtoken');
 
 // // Middleware pour vérifier si un token est présent et valide
@@ -37,23 +36,12 @@
 
 // module.exports = authMiddleware;
 
-const jwt = require('jsonwebtoken');
-
-const authMiddleware = (req, res, next) => {
-  const token = req.headers['authorization'];
-
-  if (!token) {
-    return res.status(403).json({ msg: 'Accès refusé' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, 'your_jwt_secret');
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ msg: 'Token invalide' });
+export const isAuthenticated = (req, res, next) => {
+  if (req.session && req.session.userId) {
+    next(); // Session valide, passe à la prochaine étape
+  } else {
+    res
+      .status(401)
+      .json({ message: "Session expirée. Veuillez vous reconnecter." });
   }
 };
-
-module.exports = authMiddleware;
-

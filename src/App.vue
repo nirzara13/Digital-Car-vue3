@@ -25,7 +25,6 @@ export default {
 }
 </style> -->
 
-
 <!-- <template>
   <div id="app" class="flex flex-col min-h-screen">
     <router-view />
@@ -58,8 +57,6 @@ export default {
 /* Styles globaux si nécessaire */
 </style> -->
 
-
-
 <template>
   <div id="app">
     <TheHeader />
@@ -69,15 +66,23 @@ export default {
 </template>
 
 <script>
-import TheHeader from './components/TheHeader.vue';
-import TheFooter from './components/TheFooter.vue';
+import TheHeader from "./components/TheHeader.vue";
+import TheFooter from "./components/TheFooter.vue";
+import { autoLogout } from "./utils/autoLogout";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
     TheHeader,
-    TheFooter
-  }
+    TheFooter,
+  },
+  created() {
+    // Exemple : Vérifiez si une session existe
+    const sessionExpiry = 60000; // Durée de 1 heure
+    if (localStorage.getItem("token")) {
+      autoLogout(sessionExpiry);
+    }
+  },
 };
 </script>
 
@@ -85,8 +90,8 @@ export default {
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol";
 }
 </style>
-
-
