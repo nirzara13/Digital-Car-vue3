@@ -78,7 +78,7 @@ export default {
   },
   created() {
     // Exemple : Vérifiez si une session existe
-    const sessionExpiry = 60000; // Durée de 1 heure
+    const sessionExpiry = 3600000; // Durée de 1 heure
     if (localStorage.getItem("token")) {
       autoLogout(sessionExpiry);
     }
