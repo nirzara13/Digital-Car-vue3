@@ -1,6 +1,6 @@
-import pkg from 'pg';
-import fs from 'fs/promises';
-import dotenv from 'dotenv';
+import pkg from "pg";
+import fs from "fs/promises";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -17,26 +17,63 @@ const pool = new Pool({
 
 async function insertProcedures() {
   try {
-    const data = await fs.readFile('./data/procedures.json', 'utf8');
+    const data = await fs.readFile("./data/procedures.json", "utf8");
     const procedures = JSON.parse(data);
 
     console.log(`${procedures.length} procédures trouvées dans le fichier.`);
 
     for (const procedure of procedures) {
-      const { marque, modele, composant_adas, procedure_doc } = procedure;
+      const { brands, models, adas_components, procedure_doc } = procedure;
 
-      // Insérer uniquement les colonnes existantes
-      const query = `
-        INSERT INTO procedures (marque, modele, composant_adas, procedure_doc)
-        VALUES ($1, $2, $3, $4)
-      `;
-      const values = [marque, modele, composant_adas, procedure_doc];
+      // 1. Insérer ou récupérer l'ID de la marque
+      const brandResult = await pool.query(
+        `INSERT INTO brands (malibelle) VALUES ($1) ON CONFLICT (malibelle) DO NOTHING RETURNING id`,
+        [brands]
+      );
+      const brandId =
+        brandResult.rows[0]?.id ||
+        (
+          await pool.query("SELECT id FROM brands WHERE malibelle = $1", [
+            brands,
+          ])
+        ).rows[0].id;
 
-      await pool.query(query, values);
-      console.log(`Procédure pour ${marque} ${modele} insérée avec succès.`);
+      // 2. Insérer ou récupérer l'ID du modèle
+      const modelResult = await pool.query(
+        `INSERT INTO models (molibelle, idmarque) VALUES ($1, $2) ON CONFLICT (molibelle) DO NOTHING RETURNING id`,
+        [models, brandId]
+      );
+      const modelId =
+        modelResult.rows[0]?.id ||
+        (
+          await pool.query("SELECT id FROM models WHERE molibelle = $1", [
+            models,
+          ])
+        ).rows[0].id;
+
+      // 3. Insérer ou récupérer l'ID du composant ADAS
+      const adasResult = await pool.query(
+        `INSERT INTO adas_components (colibelle, idmodele) VALUES ($1, $2) ON CONFLICT (colibelle) DO NOTHING RETURNING id`,
+        [adas_components, modelId]
+      );
+      const adasId =
+        adasResult.rows[0]?.id ||
+        (
+          await pool.query(
+            "SELECT id FROM adas_components WHERE colibelle = $1",
+            [adas_components]
+          )
+        ).rows[0].id;
+
+      // 4. Optionnel: Insérer la procédure dans une table distincte si nécessaire
+      // Si vous avez une table 'procedures' pour enregistrer les procédures liées à l'ADAS, vous pouvez l'ajouter ici.
+
+      console.log(
+        `Procédure pour ${brands} ${models} (${adas_components}) insérée avec succès.`
+      );
     }
   } catch (err) {
-    console.error('Erreur lors de l’importation :', err);
+    console.error("Erreur lors de l’importation :", err);
   } finally {
     pool.end(); // Ferme la connexion
   }

@@ -12,56 +12,84 @@
 
       <!-- Sélection des Marques -->
       <div class="mb-4">
-        <label for="marque" class="form-label fw-bold text-FEFCFB"
+        <label for="brand" class="form-label fw-bold text-FEFCFB"
           >Marques :</label
         >
         <select
-          v-model="selectedMarque"
-          id="marque"
+          v-model="selectedBrand"
+          id="brand"
           class="form-select border-0 bg-034078 text-FEFCFB shadow-sm"
           style="height: 50px; border-radius: 12px"
-          @change="fetchModeles"
+          @change="fetchModels"
         >
-          <option value="">Sélectionnez une marque</option>
-          <option v-for="marque in marques" :key="marque.marque" :value="marque.marque">{{ marque.marque }}</option>
+          <option value="">Selectionnez une marque</option>
+          <option v-for="brand in brands" :key="brand.name" :value="brand.name">
+            {{ brand.name }}
+          </option>
         </select>
       </div>
 
       <!-- Sélection des Modèles -->
       <div class="mb-4">
-        <label for="modele" class="form-label fw-bold text-FEFCFB">Modèles :</label>
+        <label for="model" class="form-label fw-bold text-FEFCFB"
+          >Modeles :</label
+        >
         <select
-          v-model="selectedModele"
-          id="modele"
+          v-model="selectedModel"
+          id="model"
           class="form-select border-0 bg-034078 text-FEFCFB shadow-sm"
           style="height: 50px; border-radius: 12px"
-          @change="fetchComposants"
+          @change="fetchAdasComponents"
         >
-          <option value="">Sélectionnez un modèle</option>
-          <option v-for="modele in modeles" :key="modele.modele" :value="modele.modele">{{ modele.modele }}</option>
+          <option value="">Selectionnez un modèle</option>
+          <option v-for="model in models" :key="model.name" :value="model.name">
+            {{ model.name }}
+          </option>
         </select>
       </div>
 
       <!-- Sélection des Composants ADAS -->
       <div class="mb-4">
-        <label for="composant-adas" class="form-label fw-bold text-FEFCFB">Composants ADAS :</label>
+        <label for="adas-component" class="form-label fw-bold text-FEFCFB"
+          >Composants ADAS :</label
+        >
         <select
-          v-model="selectedComposant"
-          id="composant-adas"
+          v-model="selectedAdasComponent"
+          id="adas-component"
           class="form-select border-0 bg-034078 text-FEFCFB shadow-sm"
           style="height: 50px; border-radius: 12px"
         >
-          <option value="">Sélectionnez un composant ADAS</option>
-          <option v-for="composant in composants" :key="composant.composant_adas" :value="composant.composant_adas">{{ composant.composant_adas }}</option>
+          <option value="">Selectionnez un composant ADAS</option>
+          <option
+            v-for="adasComponent in adasComponents"
+            :key="adasComponent.name"
+            :value="adasComponent.name"
+          >
+            {{ adasComponent.name }}
+          </option>
         </select>
       </div>
 
       <!-- Boutons -->
       <div class="d-flex justify-content-between">
-        <button class="btn fw-bold text-FEFCFB shadow-sm" style="background-color: #1282a2; border-radius: 12px; padding: 12px 24px;">
+        <button
+          class="btn fw-bold text-FEFCFB shadow-sm"
+          style="
+            background-color: #1282a2;
+            border-radius: 12px;
+            padding: 12px 24px;
+          "
+        >
           Afficher la procédure
         </button>
-        <button class="btn fw-bold text-FEFCFB shadow-sm" style="background-color: #001f54; border-radius: 12px; padding: 12px 24px;">
+        <button
+          class="btn fw-bold text-FEFCFB shadow-sm"
+          style="
+            background-color: #001f54;
+            border-radius: 12px;
+            padding: 12px 24px;
+          "
+        >
           Retour
         </button>
       </div>
@@ -70,53 +98,58 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from "axios";
 
 export default {
   data() {
     return {
-      marques: [],
-      modeles: [],
-      composants: [],
-      selectedMarque: '',
-      selectedModele: '',
-      selectedComposant: '',
+      brands: [],
+      models: [],
+      adasComponents: [],
+      selectedBrand: "",
+      selectedModel: "",
+      selectedAdasComponent: "",
     };
   },
   mounted() {
-    this.fetchMarques();
+    this.fetchBrands();
   },
   methods: {
-    async fetchMarques() {
+    async fetchBrands() {
       try {
-        const response = await axios.get('http://localhost:3000/api/procedures/marques');
-        this.marques = response.data;
+        const response = await axios.get(
+          "http://localhost:3000/api/procedures/brands"
+        );
+        this.brands = response.data;
       } catch (error) {
-        console.error('Erreur lors de la récupération des marques:', error);
+        console.error("Error fetching brands:", error);
       }
     },
-    async fetchModeles() {
-      if (!this.selectedMarque) return;
+    async fetchModels() {
+      if (!this.selectedBrand) return;
       try {
-        const response = await axios.get(`http://localhost:3000/api/procedures/modeles/${this.selectedMarque}`);
-        this.modeles = response.data;
+        const response = await axios.get(
+          `http://localhost:3000/api/procedures/models/${this.selectedBrand}`
+        );
+        this.models = response.data;
       } catch (error) {
-        console.error('Erreur lors de la récupération des modèles:', error);
+        console.error("Error fetching models:", error);
       }
     },
-    async fetchComposants() {
-      if (!this.selectedMarque || !this.selectedModele) return;
+    async fetchAdasComponents() {
+      if (!this.selectedBrand || !this.selectedModel) return;
       try {
-        const response = await axios.get(`http://localhost:3000/api/procedures/composants/${this.selectedMarque}/${this.selectedModele}`);
-        this.composants = response.data;
+        const response = await axios.get(
+          `http://localhost:3000/api/procedures/adas-components/${this.selectedBrand}/${this.selectedModel}`
+        );
+        this.adasComponents = response.data;
       } catch (error) {
-        console.error('Erreur lors de la récupération des composants ADAS:', error);
+        console.error("Error fetching ADAS components:", error);
       }
     },
   },
 };
 </script>
-
 
 <style scoped>
 .dashboard-container {

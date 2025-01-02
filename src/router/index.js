@@ -18,6 +18,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
 // Garde de navigation
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem("token");
