@@ -1,187 +1,85 @@
 <template>
-  <div class="dashboard-container bg-0A1128 text-FEFCFB min-vh-100 d-flex flex-column justify-content-center align-items-center">
-    <div class="card w-100 p-4 shadow-lg bg-001F54" style="max-width: 600px; border-radius: 16px">
-      <h1 class="text-center text-1282A2 mb-4">
-        Sélection des Marques et Composants
-      </h1>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <div class="dashboard">
+    <h1>Tableau de bord - Gestion des fichiers</h1>
 
-      <!-- Sélection des Marques -->
-      <div class="mb-4">
-        <label for="marque" class="form-label fw-bold text-FEFCFB">Marques :</label>
-        <select v-model="selectedMarque" id="marque" class="form-select border-0 bg-034078 text-FEFCFB shadow-sm" style="height: 50px; border-radius: 12px" @change="fetchModeles">
-          <option value="">Sélectionnez une marque</option>
-          <option v-for="marque in marques" :key="marque.marque" :value="marque.marque">
-            {{ marque.marque }}
-          </option>
-        </select>
-      </div>
+    <!-- Formulaire pour sélectionner la marque, le modèle et le composant -->
+    <form @submit.prevent="fetchFiles">
+      <label for="marque">Marque :</label>
+      <input
+        type="text"
+        id="marque"
+        v-model="marque"
+        placeholder="Ex: toyota"
+        required
+      />
 
-      <!-- Sélection des Modèles -->
-      <div class="mb-4">
-        <label for="modele" class="form-label fw-bold text-FEFCFB">Modèles :</label>
-        <select v-model="selectedModele" id="modele" class="form-select border-0 bg-034078 text-FEFCFB shadow-sm" style="height: 50px; border-radius: 12px" @change="fetchComposants">
-          <option value="">Sélectionnez un modèle</option>
-          <option v-for="modele in modeles" :key="modele.modele" :value="modele.modele">
-            {{ modele.modele }}
-          </option>
-        </select>
-      </div>
+      <label for="modele">Modèle :</label>
+      <input
+        type="text"
+        id="modele"
+        v-model="modele"
+        placeholder="Ex: corolla"
+        required
+      />
 
-      <!-- Sélection des Composants ADAS -->
-      <div class="mb-4">
-        <label for="composant-adas" class="form-label fw-bold text-FEFCFB">Composants ADAS :</label>
-        <select v-model="selectedComposant" id="composant-adas" class="form-select border-0 bg-034078 text-FEFCFB shadow-sm" style="height: 50px; border-radius: 12px" @change="checkPDF">
-          <option value="">Sélectionnez un composant ADAS</option>
-          <option v-for="composant in composants" :key="composant.composant_adas" :value="composant.composant_adas">
-            {{ composant.composant_adas }}
-          </option>
-        </select>
-      </div>
+      <label for="composant">Composant ADAS :</label>
+      <input
+        type="text"
+        id="composant"
+        v-model="composant"
+        placeholder="Ex: adaptive_cruise_control"
+        required
+      />
 
-      <!-- Affichage du bouton en fonction de l'existence du PDF -->
-      <div class="d-flex justify-content-between mb-4">
-        <button class="btn fw-bold text-FEFCFB shadow-sm" style="background-color: #1282a2; border-radius: 12px; padding: 12px 24px;" @click="viewPDF" v-if="pdfExist">
-          Afficher la procédure
-        </button>
+      <button type="submit">Rechercher</button>
+    </form>
 
-        <button class="btn fw-bold text-FEFCFB shadow-sm" style="background-color: #034078; border-radius: 12px; padding: 12px 24px;" @click="triggerUploadPDF" v-else>
-          Uploader un PDF
-        </button>
-      </div>
-
-      <div class="d-flex justify-content-between">
-        <button class="btn fw-bold text-FEFCFB shadow-sm" style="background-color: #001f54; border-radius: 12px; padding: 12px 24px;">
-          Retour
-        </button>
-      </div>
-
-      <!-- Input de fichier caché pour uploader le PDF -->
-      <input type="file" id="file-input" class="d-none" @change="handleFileUpload" />
-
-      <!-- Affichage du PDF si l'URL est présente -->
-      <div v-if="pdfUrl" class="pdf-viewer-container mt-4">
-        <iframe v-if="pdfUrl" :src="pdfUrl" width="100%" height="600px" title="PDF Viewer"></iframe>
-      </div>
+    <!-- Affichage des fichiers récupérés -->
+    <div v-if="files.length > 0">
+      <h2>Fichiers disponibles pour {{ marque }} / {{ modele }} / {{ composant }}</h2>
+      <ul>
+        <li v-for="file in files" :key="file.file_name">
+          <a :href="file.file_url" target="_blank">{{ file.file_name }}</a>
+        </li>
+      </ul>
     </div>
+
+    <p v-else-if="files.length === 0 && searched">Aucun fichier trouvé.</p>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
+import axios from "axios";
 
 export default {
   data() {
     return {
-      marques: [],
-      modeles: [],
-      composants: [],
-      selectedMarque: '',
-      selectedModele: '',
-      selectedComposant: '',
-      pdfExist: false,
-      selectedFile: null, // Le fichier PDF sélectionné
-      pdfUrl: '', // URL du PDF à afficher
+      marque: "", // Marque saisie par l'utilisateur
+      modele: "", // Modèle saisi par l'utilisateur
+      composant: "", // Composant saisi par l'utilisateur
+      files: [], // Liste des fichiers récupérés depuis le backend
+      searched: false, // Indique si une recherche a été effectuée
     };
   },
-  mounted() {
-    this.fetchMarques();
-  },
   methods: {
-    async fetchMarques() {
+    async fetchFiles() {
       try {
-        const response = await axios.get('http://localhost:3000/api/procedures/marques');
-        this.marques = response.data;
-      } catch (error) {
-        console.error('Erreur lors de la récupération des marques:', error);
-      }
-    },
-
-    async fetchModeles() {
-      if (!this.selectedMarque) return;
-      try {
-        const response = await axios.get(`http://localhost:3000/api/procedures/modeles/${this.selectedMarque}`);
-        this.modeles = response.data;
-      } catch (error) {
-        console.error('Erreur lors de la récupération des modèles:', error);
-      }
-    },
-
-    async fetchComposants() {
-      if (!this.selectedMarque || !this.selectedModele) return;
-      try {
-        const response = await axios.get(`http://localhost:3000/api/procedures/composants/${this.selectedMarque}/${this.selectedModele}`);
-        this.composants = response.data;
-      } catch (error) {
-        console.error('Erreur lors de la récupération des composants ADAS:', error);
-      }
-    },
-
-    async checkPDF() {
-      if (!this.selectedMarque || !this.selectedModele || !this.selectedComposant) return;
-
-      try {
-        console.log('Vérification du PDF...');
         const response = await axios.get(
-          `http://localhost:3000/api/procedures/pdf-exist/${this.selectedMarque}/${this.selectedModele}/${this.selectedComposant}`
+          `http://localhost:3000/api/files/${this.marque}/${this.modele}/${this.composant}`
         );
-        this.pdfExist = response.data.pdf_exist;
-        console.log('PDF existe:', this.pdfExist);
-
-        // Vérifier si le PDF existe et mettre à jour l'URL
-        if (this.pdfExist) {
-          this.pdfUrl = `http://localhost:3000/api/uploads/pdf/${this.selectedMarque}/${this.selectedModele}/${this.selectedComposant}`;
-        } else {
-          this.pdfUrl = ''; // Si le PDF n'existe pas, vider l'URL
-        }
+        console.log("Réponse du serveur :", response.data);
+        this.files = response.data.files;
+        this.searched = true;
       } catch (error) {
-        console.error('Erreur lors de la vérification du PDF:', error);
-      }
-    },
-
-    viewPDF() {
-      if (this.pdfUrl) {
-        window.open(this.pdfUrl, '_blank');
-      }
-    },
-
-    triggerUploadPDF() {
-      document.getElementById('file-input').click();
-    },
-
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        this.selectedFile = file;
-        this.uploadPDF();
-      }
-    },
-
-    async uploadPDF() {
-      if (!this.selectedFile) {
-        console.error('Aucun fichier sélectionné');
-        return;
-      }
-      const formData = new FormData();
-      formData.append('pdf', this.selectedFile);
-      formData.append('marque', this.selectedMarque);
-      formData.append('modele', this.selectedModele);
-      formData.append('composant', this.selectedComposant);
-
-      try {
-        const response = await axios.post(
-          'http://localhost:3000/api/procedures/upload-pdf',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        this.pdfExist = true;
-        this.pdfUrl = `http://localhost:3000/api/uploads/pdf/${this.selectedMarque}/${this.selectedModele}/${this.selectedComposant}`;
-        console.log('PDF téléchargé avec succès');
-      } catch (error) {
-        console.error('Erreur lors du téléchargement du PDF:', error);
+        console.error("Erreur lors de la récupération des fichiers :", error.response?.data || error);
+        this.files = [];
+        this.searched = true;
       }
     },
   },
@@ -189,5 +87,58 @@ export default {
 </script>
 
 <style scoped>
-/* Ajoutez ici des styles personnalisés si nécessaire */
+.dashboard {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+form label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+form input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li {
+  margin-bottom: 10px;
+}
+
+ul li a {
+  text-decoration: none;
+  color: #007bff;
+}
+
+ul li a:hover {
+  text-decoration: underline;
+}
 </style>
